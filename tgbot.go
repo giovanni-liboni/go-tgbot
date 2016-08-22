@@ -259,7 +259,6 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 	if router == nil {
 		router = mux.NewRouter()
 	}
-	log.Println("Added path :", pathl)
 
 	router.HandleFunc(pathl, func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
