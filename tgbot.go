@@ -265,6 +265,7 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 		if err != nil {
 			log.Println(err)
 		}
+		log.Println("New message with ID:", msg.UpdateID)
 		if msg.UpdateID > 0 && msg.Msg.ID > 0 {
 			bot.HandleBotan(msg.Msg)
 			bot.MainListener <- msg
@@ -281,6 +282,7 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 		host = host + ":" + port
 	}
 	log.Println("Listening on", host)
+
 	err := http.ListenAndServe(host, n)
 	if err != nil {
 		log.Fatalln(err)
