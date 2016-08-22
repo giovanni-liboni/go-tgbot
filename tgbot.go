@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"sync/atomic"
 
 	"net/http"
@@ -261,19 +262,19 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 	log.Println("Added path :", pathl)
 
 	router.HandleFunc(pathl, func(w http.ResponseWriter, r *http.Request) {
-		log.Println("New message from Telegram")
 		decoder := json.NewDecoder(r.Body)
 		var msg MessageWithUpdateID
 		err := decoder.Decode(&msg)
 		if err != nil {
 			log.Println(err)
 		}
-		log.Println("New message with ID:", msg.UpdateID)
 		if msg.UpdateID > 0 && msg.Msg.ID > 0 {
 			bot.HandleBotan(msg.Msg)
 			bot.MainListener <- msg
 		}
 	}).Methods("POST")
+
+	n.UseHandler(router)
 
 	// TODO: Porting into Negroni
 	// if bot.RelicCfg != nil {
@@ -281,12 +282,14 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 	// 	m.Use(gorelic.Handler)
 	// }
 
-	if port != "" {
-		host = host + ":" + port
+	if host == "" {
+		host = os.Getenv("HOST")
 	}
-	log.Println("Listening on", host)
+	if port == "" {
+		port = os.Getenv("PORT")
+	}
 
-	err := http.ListenAndServe(host, n)
+	err := http.ListenAndServe(host+":"+port, n)
 	if err != nil {
 		log.Fatalln(err)
 	}
