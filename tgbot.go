@@ -3,6 +3,7 @@ package tgbot
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync/atomic"
 
 	"net/http"
@@ -260,7 +261,10 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 	router.HandleFunc(pathl, func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 		var msg MessageWithUpdateID
-		decoder.Decode(&msg)
+		err := decoder.Decode(&msg)
+		if err != nil {
+			log.Println(err)
+		}
 		if msg.UpdateID > 0 && msg.Msg.ID > 0 {
 			bot.HandleBotan(msg.Msg)
 			bot.MainListener <- msg
@@ -276,7 +280,11 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 	if port != "" {
 		host = host + ":" + port
 	}
-	http.ListenAndServe(host, n)
+	log.Println("Listening on", host)
+	err := http.ListenAndServe(host, n)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 }
 
