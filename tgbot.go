@@ -1,17 +1,18 @@
 package tgbot
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync/atomic"
 
+	"net/http"
 	"net/url"
 	"path"
 	"strings"
 
 	"github.com/botanio/sdk/go"
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/binding"
-	"github.com/martini-contrib/gorelic"
+	"github.com/gorilla/mux"
+	"github.com/urfave/negroni"
 )
 
 const (
@@ -214,6 +215,10 @@ func (bot *TgBot) ServerStart(uri string, pathl string) {
 }
 
 func (bot *TgBot) ServerStartHostPort(uri string, pathl string, host string, port string) {
+	bot.ServerStartHostPortRouter(uri, pathl, host, port, nil)
+}
+
+func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host string, port string, router *mux.Router) {
 	if bot.DefaultOptions.RecoverPanic {
 		defer func() {
 			if r := recover(); r != nil {
@@ -247,23 +252,32 @@ func (bot *TgBot) ServerStartHostPort(uri string, pathl string, host string, por
 		bot.StartMainListener()
 	}
 
-	m := martini.Classic()
-	m.Post(pathl, binding.Json(MessageWithUpdateID{}), func(params martini.Params, msg MessageWithUpdateID) {
+	n := negroni.New()
+
+	if router == nil {
+		router = mux.NewRouter()
+	}
+	router.HandleFunc(pathl, func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
+		var msg MessageWithUpdateID
+		decoder.Decode(&msg)
 		if msg.UpdateID > 0 && msg.Msg.ID > 0 {
 			bot.HandleBotan(msg.Msg)
 			bot.MainListener <- msg
 		}
-	})
+	}).Methods("POST")
 
-	if bot.RelicCfg != nil {
-		gorelic.InitNewrelicAgent(bot.RelicCfg.Token, bot.RelicCfg.Name, false)
-		m.Use(gorelic.Handler)
+	// TODO: Porting into Negroni
+	// if bot.RelicCfg != nil {
+	// 	gorelic.InitNewrelicAgent(bot.RelicCfg.Token, bot.RelicCfg.Name, false)
+	// 	m.Use(gorelic.Handler)
+	// }
+
+	if port != "" {
+		host = host + ":" + port
 	}
-	if host == "" || port == "" {
-		m.Run()
-	} else {
-		m.RunOnAddr(host + ":" + port)
-	}
+	http.ListenAndServe(host, n)
+
 }
 
 func (bot TgBot) HandleBotan(msg Message) {
