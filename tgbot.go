@@ -253,7 +253,7 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 		bot.StartMainListener()
 	}
 
-	n := negroni.New()
+	n := negroni.Classic()
 
 	if router == nil {
 		router = mux.NewRouter()
