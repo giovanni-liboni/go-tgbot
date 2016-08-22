@@ -259,7 +259,9 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 		router = mux.NewRouter()
 	}
 	log.Println("Added path :", pathl)
+
 	router.HandleFunc(pathl, func(w http.ResponseWriter, r *http.Request) {
+		log.Println("New message from Telegram")
 		decoder := json.NewDecoder(r.Body)
 		var msg MessageWithUpdateID
 		err := decoder.Decode(&msg)
