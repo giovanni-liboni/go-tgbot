@@ -14,6 +14,7 @@ import (
 
 	"github.com/botanio/sdk/go"
 	"github.com/gorilla/mux"
+	negronigorelic "github.com/jingweno/negroni-gorelic"
 	"github.com/urfave/negroni"
 )
 
@@ -275,11 +276,9 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 
 	n.UseHandler(router)
 
-	// TODO: Porting into Negroni
-	// if bot.RelicCfg != nil {
-	// 	gorelic.InitNewrelicAgent(bot.RelicCfg.Token, bot.RelicCfg.Name, false)
-	// 	m.Use(gorelic.Handler)
-	// }
+	if bot.RelicCfg != nil {
+		n.Use(negronigorelic.New(bot.RelicCfg.Token, bot.RelicCfg.Name, false))
+	}
 
 	if host == "" {
 		host = os.Getenv("HOST")
