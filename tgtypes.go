@@ -23,6 +23,7 @@ type UserGroup struct { // For Message type!
 	LastName  *string `json:"last_name,omitempty"`
 	Username  *string `json:"username,omitempty"`
 	Title     *string `json:"title,omitempty"`
+	Type      *string `json:"type"`
 }
 
 // Message ...

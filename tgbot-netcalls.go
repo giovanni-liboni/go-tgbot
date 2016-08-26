@@ -118,16 +118,17 @@ func (bot TgBot) uploadFileNoResult(url string, params map[string]string, fieldn
 	var err error
 	w := multipart.NewWriter(&b)
 	var fw io.Writer
+	var f *os.File
 
 	switch rfile := filename.(type) {
 	case string:
 		rfile = filepath.Clean(rfile)
-		f, err := os.Open(rfile)
+		f, err = os.Open(rfile)
 		if err != nil {
 			return defaultb, err
 		}
 
-		fw, err := w.CreateFormFile(fieldname, rfile)
+		fw, err = w.CreateFormFile(fieldname, rfile)
 		if err != nil {
 			return defaultb, err
 		}
