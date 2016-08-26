@@ -92,6 +92,7 @@ type TgBot struct {
 type RelicConfig struct {
 	Token string
 	Name  string
+	Debug bool
 }
 
 // ProcessAllMsg default message handler that take care of clean the messages, the chains and the action functions.
@@ -277,7 +278,7 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 	n.UseHandler(router)
 
 	if bot.RelicCfg != nil {
-		n.Use(negronigorelic.New(bot.RelicCfg.Token, bot.RelicCfg.Name, false))
+		n.Use(negronigorelic.New(bot.RelicCfg.Token, bot.RelicCfg.Name, bot.RelicCfg.Debug))
 	}
 
 	if host == "" {
@@ -306,7 +307,12 @@ func (bot TgBot) HandleBotan(msg Message) {
 }
 
 func (bot *TgBot) SetRelicConfig(tok string, name string) *TgBot {
-	bot.RelicCfg = &RelicConfig{tok, name}
+	bot.RelicCfg = &RelicConfig{tok, name, false}
+	return bot
+}
+
+func (bot *TgBot) SetRelicConfigDebug(tok string, name string, debug bool) *TgBot {
+	bot.RelicCfg = &RelicConfig{tok, name, debug}
 	return bot
 }
 
