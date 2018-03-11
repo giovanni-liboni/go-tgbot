@@ -14,8 +14,6 @@ import (
 
 	"github.com/botanio/sdk/go"
 	"github.com/gorilla/mux"
-	negronigorelic "github.com/jingweno/negroni-gorelic"
-	"github.com/urfave/negroni"
 )
 
 const (
@@ -47,7 +45,6 @@ func NewWithError(token string) (*TgBot, error) {
 		BaseRequestURL:       url,
 		BaseFileRequestURL:   furl,
 		MainListener:         nil,
-		RelicCfg:             nil,
 		BotanIO:              nil,
 		TestConditionalFuncs: make([]ConditionCallStructure, 0),
 		NoMessageFuncs:       make([]NoMessageCall, 0),
@@ -78,7 +75,6 @@ type TgBot struct {
 	Username             string
 	BaseRequestURL       string
 	BaseFileRequestURL   string
-	RelicCfg             *RelicConfig
 	BotanIO              *botan.Botan
 	MainListener         chan MessageWithUpdateID
 	LastUpdateID         int64
@@ -256,30 +252,20 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 		bot.StartMainListener()
 	}
 
-	n := negroni.Classic()
-
-	if router == nil {
-		router = mux.NewRouter()
-	}
-
-	router.HandleFunc(pathl, func(w http.ResponseWriter, r *http.Request) {
-		decoder := json.NewDecoder(r.Body)
-		var msg MessageWithUpdateID
-		err := decoder.Decode(&msg)
-		if err != nil {
-			log.Println(err)
+	http.HandleFunc(pathl, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			decoder := json.NewDecoder(r.Body)
+			var msg MessageWithUpdateID
+			err := decoder.Decode(&msg)
+			if err != nil {
+				log.Println(err)
+			}
+			if msg.UpdateID > 0 && msg.Msg.ID > 0 {
+				bot.HandleBotan(msg.Msg)
+				bot.MainListener <- msg
+			}
 		}
-		if msg.UpdateID > 0 && msg.Msg.ID > 0 {
-			bot.HandleBotan(msg.Msg)
-			bot.MainListener <- msg
-		}
-	}).Methods("POST")
-
-	n.UseHandler(router)
-
-	if bot.RelicCfg != nil {
-		n.Use(negronigorelic.New(bot.RelicCfg.Token, bot.RelicCfg.Name, bot.RelicCfg.Debug))
-	}
+	})
 
 	if host == "" {
 		host = os.Getenv("HOST")
@@ -288,7 +274,7 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 		port = os.Getenv("PORT")
 	}
 
-	err := http.ListenAndServe(host+":"+port, n)
+	err := http.ListenAndServe(host+":"+port, nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -306,15 +292,15 @@ func (bot TgBot) HandleBotan(msg Message) {
 	}
 }
 
-func (bot *TgBot) SetRelicConfig(tok string, name string) *TgBot {
-	bot.RelicCfg = &RelicConfig{tok, name, false}
-	return bot
-}
-
-func (bot *TgBot) SetRelicConfigDebug(tok string, name string, debug bool) *TgBot {
-	bot.RelicCfg = &RelicConfig{tok, name, debug}
-	return bot
-}
+// func (bot *TgBot) SetRelicConfig(tok string, name string) *TgBot {
+// 	bot.RelicCfg = &RelicConfig{tok, name, false}
+// 	return bot
+// }
+//
+// func (bot *TgBot) SetRelicConfigDebug(tok string, name string, debug bool) *TgBot {
+// 	bot.RelicCfg = &RelicConfig{tok, name, debug}
+// 	return bot
+// }
 
 func (bot *TgBot) SetBotanToken(tok string) *TgBot {
 	t := botan.New(tok)
