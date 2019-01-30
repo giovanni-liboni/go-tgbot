@@ -12,7 +12,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/botanio/sdk/go"
 	"github.com/gorilla/mux"
 )
 
@@ -45,7 +44,6 @@ func NewWithError(token string) (*TgBot, error) {
 		BaseRequestURL:       url,
 		BaseFileRequestURL:   furl,
 		MainListener:         nil,
-		BotanIO:              nil,
 		TestConditionalFuncs: make([]ConditionCallStructure, 0),
 		NoMessageFuncs:       make([]NoMessageCall, 0),
 		ChainConditionals:    make([]*ChainStructure, 0),
@@ -75,7 +73,6 @@ type TgBot struct {
 	Username             string
 	BaseRequestURL       string
 	BaseFileRequestURL   string
-	BotanIO              *botan.Botan
 	MainListener         chan MessageWithUpdateID
 	LastUpdateID         int64
 	TestConditionalFuncs []ConditionCallStructure
@@ -282,14 +279,6 @@ func (bot *TgBot) ServerStartHostPortRouter(uri string, pathl string, host strin
 }
 
 func (bot TgBot) HandleBotan(msg Message) {
-	if bot.BotanIO != nil {
-		id := msg.Chat.ID
-		name := "other"
-		if msg.Text != nil {
-			name = fmt.Sprintf("text:%s", *msg.Text)
-		}
-		bot.BotanIO.TrackAsync(id, msg, name, func(a botan.Answer, e []error) {})
-	}
 }
 
 // func (bot *TgBot) SetRelicConfig(tok string, name string) *TgBot {
@@ -303,8 +292,6 @@ func (bot TgBot) HandleBotan(msg Message) {
 // }
 
 func (bot *TgBot) SetBotanToken(tok string) *TgBot {
-	t := botan.New(tok)
-	bot.BotanIO = &t
 	return bot
 }
 
